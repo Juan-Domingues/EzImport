@@ -13,9 +13,12 @@
     </form>
 
     <h2>Executar Scripts</h2>
-    <button type="button" onclick="runScript('teste_criação_tabela.py')">Executar teste_criação_tabela.py</button>
-    <button type="button" onclick="runScript('teste_criação_tabela_backup.py')">Executar teste_criação_tabela_backup.py</button>
-    <button type="button" onclick="runScript('teste_update_tabela.py')">Executar teste_update_tabela.py</button>
+    <button type="button" onclick="runScript('teste_criação_tabela.py')">Criar Tabela</button>
+    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar Tabela</button>
+    
+    <h2>Executar Backup</h2>
+    <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
+    <button type="button" onclick="runBackupScript()">Executar Backup</button>
 
     <script>
         function uploadFile() {
@@ -48,6 +51,26 @@
                 console.error('Erro:', error);
                 alert('Erro ao executar o script.');
             });
+        }
+
+        function runBackupScript() {
+            var tableName = document.getElementById('backupTableName').value;
+            if (tableName) {
+                fetch(`/run_backup_script/${tableName}`, {
+                    method: 'POST'
+                }).then(response => {
+                    if (response.ok) {
+                        alert(`Backup da tabela ${tableName} executado com sucesso!`);
+                    } else {
+                        response.text().then(text => alert(`Erro ao executar o backup: ${text}`));
+                    }
+                }).catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao executar o backup.');
+                });
+            } else {
+                alert('Por favor, insira o nome da tabela para o backup.');
+            }
         }
     </script>
 </body>
