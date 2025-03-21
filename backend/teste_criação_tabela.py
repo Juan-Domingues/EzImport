@@ -41,11 +41,11 @@ for file_path in file_paths:
 
     columns = ', '.join([f'{col} {get_sql_type(dtype)}' for col, dtype in df.dtypes.items()])
 
-    conn = pyodbc.connect('DRIVER={SQL Server};'
-                          'SERVER=seu_servidor;'
-                          'DATABASE=seu_banco_de_dados;'
-                          'UID=seu_usuario;'
-                          'PWD=sua_senha')
+    conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};'
+                          'SERVER=SQL19BICR\\SQL19BI,61161;'
+                          'DATABASE=RevenueManagement;'
+                          'UID=job.revenue;'
+                          'PWD=Job@r3v3nu3')
     cursor = conn.cursor()
 
     create_table_query = f'CREATE TABLE {table_name} ({columns})'
