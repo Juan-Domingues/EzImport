@@ -1,12 +1,36 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload de Arquivo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #ddd;
+        }
+        .header img {
+            height: 50px;
+            margin-right: 10px;
+        }
+        .header h1 {
+            font-size: 45px;
+            font-weight: bold;
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
-    <h1>EZ-Import</h1>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo-azul.png') }}" alt="Logo">
+        <h1>| EZ-IMPORT</h1>
+    </div>
 
     <h2>Upload de Arquivo</h2>
     <form id="uploadForm" enctype="multipart/form-data">
@@ -16,12 +40,12 @@
     </form>
 
     <h2>Executar Scripts</h2>
-    <button type="button" onclick="runScript('teste_criação_tabela.py')">Criar Tabela</button>
-    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar Tabela</button>
+    <button type="button" onclick="runScript('teste_criação_tabela.py')">Executar teste_criação_tabela.py</button>
+    <button type="button" onclick="runScript('teste_update_tabela.py')">Executar teste_update_tabela.py</button>
     
-    <h2>Gerir Tabelas</h2>
+    <h2>Executar Backup</h2>
     <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
-    <button type="button" onclick="runBackupScript()">Criar Tabela de Backup</button>
+    <button type="button" onclick="runBackupScript()">Executar Backup</button>
     <button type="button" onclick="deleteTable()">Excluir Tabela</button>
 
     <script>
