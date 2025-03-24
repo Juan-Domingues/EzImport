@@ -10,11 +10,12 @@
     <form id="uploadForm" enctype="multipart/form-data">
         <input type="file" name="file" id="fileInput">
         <button type="button" onclick="uploadFile()">Upload</button>
+        <button type="button" onclick="clearUploads()">Limpar Uploads</button>
     </form>
 
     <h2>Executar Scripts</h2>
     <button type="button" onclick="runScript('teste_criação_tabela.py')">Criar Tabela</button>
-    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar Tabela</button>
+    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar dados</button>
     
     <h2>Executar Backup</h2>
     <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
@@ -35,6 +36,21 @@
             }).catch(error => {
                 console.error('Erro:', error);
                 alert('Erro ao enviar o arquivo.');
+            });
+        }
+
+        function clearUploads() {
+            fetch('/clear_uploads', {
+                method: 'POST'
+            }).then(response => {
+                if (response.ok) {
+                    alert('Uploads limpos com sucesso!');
+                } else {
+                    alert('Falha ao limpar uploads.');
+                }
+            }).catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao limpar uploads.');
             });
         }
 

@@ -21,6 +21,20 @@ def upload():
 
     return redirect(url_for('index'))
 
+@app.route('/clear_uploads', methods=['POST'])
+def clear_uploads():
+    folder = 'uploads'
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            return f"Erro ao limpar uploads: {str(e)}", 500
+    return "Uploads limpos com sucesso!", 200
+
 @app.route('/run_script/<script_name>', methods=['POST'])
 def run_script(script_name):
     # Ler o caminho do arquivo salvo
