@@ -1,9 +1,7 @@
+import sys
 import pandas as pd
 import pyodbc
 import os
-
-# Lista de arquivos para processar
-file_paths = ['C:\\Users\\juan.domingues\\OneDrive - Azul Linhas Aéreas\\Desktop\\teste pyimport\\teste_import.csv']  
 
 def read_file(file_path):
     ext = os.path.splitext(file_path)[1].lower()
@@ -18,34 +16,30 @@ def read_file(file_path):
     else:
         raise ValueError(f"Formato de arquivo não suportado: {ext}")
 
-for file_path in file_paths:
+def get_sql_type(dtype):
+    if pd.api.types.is_integer_dtype(dtype):
+        return 'INT'
+    elif pd.api.types.is_float_dtype(dtype):
+        return 'FLOAT'
+    elif pd.api.types.is_bool_dtype(dtype):
+        return 'BIT'
+    elif pd.api.types.is_datetime64_any_dtype(dtype):
+        return 'DATETIME'
+    else:
+        return 'VARCHAR(MAX)'
+
+def create_table_from_file(file_path, server, database, uid, pwd):
     df = read_file(file_path)
 
     # Obter o nome do arquivo sem a extensão
     file_name = os.path.splitext(os.path.basename(file_path))[0]
 
-    # Padronizar o nome da tabela
-    table_name = f'dbo.tb{file_name}'
-
-    def get_sql_type(dtype):
-        if pd.api.types.is_integer_dtype(dtype):
-            return 'INT'
-        elif pd.api.types.is_float_dtype(dtype):
-            return 'FLOAT'
-        elif pd.api.types.is_bool_dtype(dtype):
-            return 'BIT'
-        elif pd.api.types.is_datetime64_any_dtype(dtype):
-            return 'DATETIME'
-        else:
-            return 'VARCHAR(MAX)'
+    #Padronizar o nome da tabela
+    table_name = f'dbo.Tb_{file_name}'
 
     columns = ', '.join([f'{col} {get_sql_type(dtype)}' for col, dtype in df.dtypes.items()])
 
-    conn = pyodbc.connect('DRIVER={ODBC Driver 17 for SQL Server};'
-                          'SERVER=SQL19BICR\\SQL19BI,61161;'
-                          'DATABASE=RevenueManagement;'
-                          'UID=job.revenue;'
-                          'PWD=Job@r3v3nu3')
+    conn = pyodbc.connect(f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
     cursor = conn.cursor()
 
     create_table_query = f'CREATE TABLE {table_name} ({columns})'
@@ -60,3 +54,11 @@ for file_path in file_paths:
 
     cursor.close()
     conn.close()
+
+if __name__ == '__main__':
+    file_path = sys.argv[1]
+    server = 'SQL19BICR\\SQL19BI,61161'
+    database = 'RevenueManagement'
+    uid = 'job.revenue'
+    pwd = 'Job@r3v3nu3'
+    create_table_from_file(file_path, server, database, uid, pwd)
