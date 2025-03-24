@@ -20,9 +20,21 @@
             margin-right: 10px;
         }
         .header h1 {
-            font-size: 45px;
-            font-weight: bold;
+            font-size: 45px; /* Aumente o tamanho da fonte */
+            font-weight: bold; /* Deixe o texto em negrito */
             margin: 0;
+        }
+        table {
+            width: 65%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
         }
     </style>
 </head>
@@ -34,10 +46,13 @@
 
     <h2>Upload de Arquivo</h2>
     <form id="uploadForm" enctype="multipart/form-data">
-        <input type="file" name="file" id="fileInput">
+        <input type="file" name="file" id="fileInput" onchange="previewFile()">
         <button type="button" onclick="uploadFile()">Upload</button>
         <button type="button" onclick="clearUploads()">Limpar Uploads</button>
     </form>
+
+    <h2>Pré-visualização dos Dados</h2>
+    <table id="dataTable"></table>
 
     <h2>Executar Scripts</h2>
     <button type="button" onclick="runScript('teste_criação_tabela.py')">Executar teste_criação_tabela.py</button>
@@ -49,8 +64,39 @@
     <button type="button" onclick="deleteTable()">Excluir Tabela</button>
 
     <script>
+        function previewFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const rows = text.split('\n').map(row => row.split(','));
+                const table = document.getElementById('dataTable');
+                table.innerHTML = '';
+                rows.forEach((row, rowIndex) => {
+                    const tr = document.createElement('tr');
+                    row.forEach((cell, cellIndex) => {
+                        const cellElement = rowIndex === 0 ? document.createElement('th') : document.createElement('td');
+                        cellElement.contentEditable = true;
+                        cellElement.textContent = cell;
+                        tr.appendChild(cellElement);
+                    });
+                    table.appendChild(tr);
+                });
+            };
+            reader.readAsText(file);
+        }
+
         function uploadFile() {
-            var formData = new FormData(document.getElementById('uploadForm'));
+            const table = document.getElementById('dataTable');
+            const rows = Array.from(table.rows);
+            const csvData = rows.map(row => {
+                const cells = Array.from(row.cells);
+                return cells.map(cell => cell.textContent).join(',');
+            }).join('\n');
+
+            const formData = new FormData();
+            formData.append('file', new Blob([csvData], { type: 'text/csv' }), 'modified_file.csv');
+
             fetch('/upload', {
                 method: 'POST',
                 body: formData
