@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import pyodbc
 import os
@@ -47,7 +48,7 @@ database = 'RevenueManagement'
 username = 'job.revenue'
 password = 'Job@r3v3nu3'
 table_name = 'dbo.Tb_teste_import'
-file_path = 'C:\\Users\\juan.domingues\\OneDrive - Azul Linhas Aéreas\\Desktop\\teste pyimport\\teste_import_update.csv'
+file_path = sys.argv[1]
 
 #Conecta ao banco de dados
 conn = connect_to_db(server, database, username, password)
