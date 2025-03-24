@@ -20,6 +20,7 @@
     <h2>Executar Backup</h2>
     <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
     <button type="button" onclick="runBackupScript()">Executar Backup</button>
+    <button type="button" onclick="deleteTable()">Excluir Tabela</button>
 
     <script>
         function uploadFile() {
@@ -86,6 +87,26 @@
                 });
             } else {
                 alert('Por favor, insira o nome da tabela para o backup.');
+            }
+        }
+
+        function deleteTable() {
+            var tableName = document.getElementById('backupTableName').value;
+            if (tableName) {
+                fetch(`/delete_table/${tableName}`, {
+                    method: 'POST'
+                }).then(response => {
+                    if (response.ok) {
+                        alert(`Tabela ${tableName} excluída com sucesso!`);
+                    } else {
+                        response.text().then(text => alert(`Erro ao excluir a tabela: ${text}`));
+                    }
+                }).catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao excluir a tabela.');
+                });
+            } else {
+                alert('Por favor, insira o nome da tabela para excluir.');
             }
         }
     </script>

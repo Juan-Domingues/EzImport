@@ -1,6 +1,7 @@
 from flask import Flask, request, render_template, redirect, url_for
 import os
 import subprocess
+import pyodbc
 
 app = Flask(__name__)
 
@@ -56,6 +57,23 @@ def run_backup_script(table_name):
         return f"Backup da tabela {table_name} executado com sucesso!", 200
     except subprocess.CalledProcessError as e:
         return f"Erro ao executar o backup da tabela {table_name}: {str(e)}", 500
+
+@app.route('/delete_table/<table_name>', methods=['POST'])
+def delete_table(table_name):
+    server = 'SQL19BICR\SQL19BICR,61161'
+    database = 'RevenueManagement'
+    uid = 'job.revenue'
+    pwd = 'Job@r3v3nu3'
+    try:
+        conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={uid};PWD={pwd}')
+        cursor = conn.cursor()
+        cursor.execute(f"DROP TABLE {table_name}")
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return f"Tabela {table_name} excluída com sucesso!", 200
+    except Exception as e:
+        return f"Erro ao excluir a tabela {table_name}: {str(e)}", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
