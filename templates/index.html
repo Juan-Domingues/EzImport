@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload de Arquivo</title>
+    <title>Ez-Import</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,6 +52,19 @@
         .table-controls {
             margin-top: 10px;
         }
+        .delete-interface {
+            margin-top: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .table-container {
+            max-height: 400px; /* Limitar a altura da tabela */
+            overflow-y: auto; /* Adicionar barra de rolagem vertical */
+        }
     </style>
 </head>
 <body>
@@ -74,16 +87,24 @@
         <button type="button" onclick="deleteSelectedRow()">Deletar Linha Selecionada</button>
         <button type="button" onclick="deleteSelectedColumn()">Deletar Coluna Selecionada</button>
     </div>
-    <table id="dataTable"></table>
+    <div class="table-container">
+        <table id="dataTable"></table>
+    </div>
 
     <h2>Executar Scripts</h2>
     <button type="button" onclick="runScript('teste_criação_tabela.py')">Criar Tabela</button>
-    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar Tabela</button>
+    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar dados da Tabela</button>
     
     <h2>Executar Backup</h2>
     <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
     <button type="button" onclick="runBackupScript()">Executar Backup</button>
     <button type="button" onclick="deleteTable()">Excluir Tabela</button>
+
+    <div class="delete-interface">
+        <h2>Excluir Tabela com Query SQL</h2>
+        <textarea id="deleteQuery" placeholder="Digite a query SQL para excluir"></textarea>
+        <button type="button" onclick="deleteTableWithQuery()">Executar Query de Exclusão</button>
+    </div>
 
     <script>
         let selectedCell = null;
@@ -141,12 +162,13 @@
         }
 
         function displayTable(rows) {
+            const hasHeader = confirm('O arquivo possui cabeçalho?');
             const table = document.getElementById('dataTable');
             table.innerHTML = '';
-            rows.forEach((row, rowIndex) => {
+            rows.slice(0, 10).forEach((row, rowIndex) => { // Limitar a visualização a 10 linhas
                 const tr = document.createElement('tr');
                 row.forEach((cell, cellIndex) => {
-                    const cellElement = rowIndex === 0 ? document.createElement('th') : document.createElement('td');
+                    const cellElement = (hasHeader && rowIndex === 0) ? document.createElement('th') : document.createElement('td');
                     cellElement.contentEditable = true;
                     cellElement.textContent = cell;
                     cellElement.onclick = () => selectCell(cellElement);
@@ -249,6 +271,30 @@
                 });
             } else {
                 alert('Por favor, insira o nome da tabela para excluir.');
+            }
+        }
+
+        function deleteTableWithQuery() {
+            const query = document.getElementById('deleteQuery').value;
+            if (query) {
+                fetch('/delete_table_with_query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Query de exclusão executada com sucesso!');
+                    } else {
+                        response.text().then(text => alert(`Erro ao executar a query: ${text}`));
+                    }
+                }).catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao executar a query.');
+                });
+            } else {
+                alert('Por favor, insira a query SQL para excluir.');
             }
         }
 
