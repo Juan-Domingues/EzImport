@@ -25,16 +25,32 @@
             margin: 0;
         }
         table {
-            width: 65%;
+            width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 20px;
         }
         table, th, td {
-            border: 1px solid black;
+            border: 1px solid #ddd;
         }
         th, td {
             padding: 10px;
             text-align: left;
+            cursor: pointer;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .selected {
+            background-color: #d3d3d3;
+        }
+        .table-controls {
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -52,11 +68,17 @@
     </form>
 
     <h2>Pré-visualização dos Dados</h2>
+    <div class="table-controls">
+        <button type="button" onclick="addRow()">Adicionar Linha</button>
+        <button type="button" onclick="addColumn()">Adicionar Coluna</button>
+        <button type="button" onclick="deleteSelectedRow()">Deletar Linha Selecionada</button>
+        <button type="button" onclick="deleteSelectedColumn()">Deletar Coluna Selecionada</button>
+    </div>
     <table id="dataTable"></table>
 
     <h2>Executar Scripts</h2>
-    <button type="button" onclick="runScript('teste_criação_tabela.py')">Executar teste_criação_tabela.py</button>
-    <button type="button" onclick="runScript('teste_update_tabela.py')">Executar teste_update_tabela.py</button>
+    <button type="button" onclick="runScript('teste_criação_tabela.py')">Criar Tabela</button>
+    <button type="button" onclick="runScript('teste_update_tabela.py')">Atualizar Tabela</button>
     
     <h2>Executar Backup</h2>
     <input type="text" id="backupTableName" placeholder="Nome da Tabela para Backup">
@@ -64,26 +86,74 @@
     <button type="button" onclick="deleteTable()">Excluir Tabela</button>
 
     <script>
+        let selectedCell = null;
+        let originalFileName = '';
+
         function previewFile() {
             const file = document.getElementById('fileInput').files[0];
+            originalFileName = file.name;
             const reader = new FileReader();
+            const fileType = file.name.split('.').pop().toLowerCase();
+
             reader.onload = function(e) {
-                const text = e.target.result;
-                const rows = text.split('\n').map(row => row.split(','));
-                const table = document.getElementById('dataTable');
-                table.innerHTML = '';
-                rows.forEach((row, rowIndex) => {
-                    const tr = document.createElement('tr');
-                    row.forEach((cell, cellIndex) => {
-                        const cellElement = rowIndex === 0 ? document.createElement('th') : document.createElement('td');
-                        cellElement.contentEditable = true;
-                        cellElement.textContent = cell;
-                        tr.appendChild(cellElement);
+                let data;
+                if (fileType === 'csv') {
+                    data = e.target.result;
+                    displayTable(parseCSV(data));
+                } else if (fileType === 'xls' || fileType === 'xlsx') {
+                    const workbook = XLSX.read(e.target.result, { type: 'binary' });
+                    const sheetName = workbook.SheetNames[0];
+                    const sheet = workbook.Sheets[sheetName];
+                    data = XLSX.utils.sheet_to_csv(sheet);
+                    displayTable(parseCSV(data));
+                } else if (fileType === 'json') {
+                    data = JSON.parse(e.target.result);
+                    displayTable(parseJSON(data));
+                } else if (fileType === 'parquet') {
+                    parquetjs.ParquetReader.openBuffer(e.target.result).then(reader => {
+                        reader.getCursor().next().then(data => {
+                            displayTable(parseJSON(data));
+                        });
                     });
-                    table.appendChild(tr);
-                });
+                } else {
+                    alert('Formato de arquivo não suportado.');
+                }
             };
-            reader.readAsText(file);
+
+            if (fileType === 'xls' || fileType === 'xlsx') {
+                reader.readAsBinaryString(file);
+            } else if (fileType === 'parquet') {
+                reader.readAsArrayBuffer(file);
+            } else {
+                reader.readAsText(file);
+            }
+        }
+
+        function parseCSV(data) {
+            return data.split('\n').map(row => row.split(','));
+        }
+
+        function parseJSON(data) {
+            const keys = Object.keys(data[0]);
+            const rows = data.map(obj => keys.map(key => obj[key]));
+            rows.unshift(keys);
+            return rows;
+        }
+
+        function displayTable(rows) {
+            const table = document.getElementById('dataTable');
+            table.innerHTML = '';
+            rows.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                row.forEach((cell, cellIndex) => {
+                    const cellElement = rowIndex === 0 ? document.createElement('th') : document.createElement('td');
+                    cellElement.contentEditable = true;
+                    cellElement.textContent = cell;
+                    cellElement.onclick = () => selectCell(cellElement);
+                    tr.appendChild(cellElement);
+                });
+                table.appendChild(tr);
+            });
         }
 
         function uploadFile() {
@@ -95,7 +165,7 @@
             }).join('\n');
 
             const formData = new FormData();
-            formData.append('file', new Blob([csvData], { type: 'text/csv' }), 'modified_file.csv');
+            formData.append('file', new Blob([csvData], { type: 'text/csv' }), originalFileName);
 
             fetch('/upload', {
                 method: 'POST',
@@ -181,6 +251,59 @@
                 alert('Por favor, insira o nome da tabela para excluir.');
             }
         }
+
+        function addRow() {
+            const table = document.getElementById('dataTable');
+            const row = table.insertRow();
+            const cellCount = table.rows[0].cells.length;
+            for (let i = 0; i < cellCount; i++) {
+                const cell = row.insertCell();
+                cell.contentEditable = true;
+                cell.onclick = () => selectCell(cell);
+            }
+        }
+
+        function addColumn() {
+            const table = document.getElementById('dataTable');
+            Array.from(table.rows).forEach(row => {
+                const cell = row.insertCell();
+                cell.contentEditable = true;
+                cell.onclick = () => selectCell(cell);
+            });
+        }
+
+        function deleteSelectedRow() {
+            if (selectedCell) {
+                const rowIndex = selectedCell.parentElement.rowIndex;
+                document.getElementById('dataTable').deleteRow(rowIndex);
+                selectedCell = null;
+            } else {
+                alert('Por favor, selecione uma célula para deletar a linha correspondente.');
+            }
+        }
+
+        function deleteSelectedColumn() {
+            if (selectedCell) {
+                const cellIndex = selectedCell.cellIndex;
+                const table = document.getElementById('dataTable');
+                Array.from(table.rows).forEach(row => {
+                    row.deleteCell(cellIndex);
+                });
+                selectedCell = null;
+            } else {
+                alert('Por favor, selecione uma célula para deletar a coluna correspondente.');
+            }
+        }
+
+        function selectCell(cell) {
+            if (selectedCell) {
+                selectedCell.classList.remove('selected');
+            }
+            selectedCell = cell;
+            selectedCell.classList.add('selected');
+        }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/parquetjs/1.12.0/parquet.min.js"></script>
 </body>
 </html>

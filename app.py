@@ -60,7 +60,7 @@ def run_backup_script(table_name):
 
 @app.route('/delete_table/<table_name>', methods=['POST'])
 def delete_table(table_name):
-    server = 'SQL19BICR\SQL19BICR,61161'
+    server = 'SQL19BICR\\SQL19BICR,61161'
     database = 'RevenueManagement'
     uid = 'job.revenue'
     pwd = 'Job@r3v3nu3'
