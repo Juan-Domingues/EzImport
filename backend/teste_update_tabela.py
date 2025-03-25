@@ -1,63 +1,45 @@
-import sys
-import pandas as pd
 import pyodbc
+import pandas as pd
+import sys
 import os
 
-# Conexão com o banco de dados
-def connect_to_db(server, database, username, password):
-    conn = pyodbc.connect(
-    f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER= {server};DATABASE={database};UID={username};PWD={password}'
-    )
-    return conn
-
-#Função para carregar novos dados
-def read_file(file_path):
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == '.csv':
-        return pd.read_csv(file_path)
-    elif ext in ['.xls', '.xlsx']:
-        return pd.read_excel(file_path)
-    elif ext == '.json':
-        return pd.read_json(file_path)
-    elif ext == '.parquet':
-        return pd.read_parquet(file_path)
-    else:
-        raise ValueError(f"Formato de arquivo não suportado: {ext}")
-
-# Função para atualizar tabela
-def update_table_with_new_data(conn, table_name, new_data):
-    cursor = conn.cursor()
-
-    for index, row in new_data.iterrows():
-        #Cria a consulta para atualizar
-        columns = ','.join(new_data.columns)
-        values = ','.join([f" ' {row[col]}' " for col in new_data.columns])
-        update_query = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
-
-        try:
-            cursor.execute(update_query)
-        except Exception as e:
-            print(f"Erro ao atualizar tabela: {e}")
-            return
-    
-    conn.commit()
-
-#Definições de conexão de tabela
+# Variáveis de conexão
 server = 'SQL19BICR\\SQL19BI,61161'
 database = 'RevenueManagement'
 username = 'job.revenue'
 password = 'Job@r3v3nu3'
-table_name = 'dbo.Tb_teste_import'
+
+# Caminho do arquivo de upload
 file_path = sys.argv[1]
 
-#Conecta ao banco de dados
-conn = connect_to_db(server, database, username, password)
+# Nome da tabela baseado no nome do arquivo de upload
+file_name = os.path.basename(file_path)
+table_name = f'dbo.{file_name.split(".")[0]}'
 
-#Carrega novos dados
-new_data = read_file(file_path)
+try:
+    # Conectar ao banco de dados
+    conn = pyodbc.connect(f'DRIVER={{SQL Server}};SERVER={server};DATABASE={database};UID={username};PWD={password}')
+    cursor = conn.cursor()
 
-#Atualiza tabela com novos dados
-update_table_with_new_data(conn, table_name, new_data)
+    # Ler o arquivo de upload em um DataFrame do Pandas
+    if file_name.endswith('.csv'):
+        df = pd.read_csv(file_path)
+    elif file_name.endswith('.xlsx'):
+        df = pd.read_excel(file_path)
+    else:
+        raise ValueError('Formato de arquivo não suportado')
 
-#Encerrar conexão
-conn.close()
+    # Atualizar a tabela no banco de dados
+    for index, row in df.iterrows():
+        columns = ', '.join(row.index)
+        values = ', '.join([f"'{str(value)}'" for value in row.values])
+        query = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
+        cursor.execute(query)
+
+    # Commit e fechar a conexão
+    conn.commit()
+    cursor.close()
+    conn.close()
+except Exception as e:
+    print(f"Erro ao atualizar a tabela: {str(e)}")
+    sys.exit(1)
